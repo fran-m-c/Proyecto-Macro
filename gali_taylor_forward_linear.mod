@@ -1,66 +1,105 @@
 /*
-  NK lineal (Gali 2015) + Regla de Taylor con expectativas:
-    i_t = phi_pi * E_t[pi_{t+1}] + phi_y * E_t[y~_{t+1}]
-  Conmutador de choques: TECH / DEMAND / BOTH
+  Gali (2015) – Regla de Taylor con expectativas (forward).
+  Versión “Julia-safe”: sin scripting MATLAB; la tabla se arma en Julia.
+
+  Defines por línea de comando (sin espacios):
+    -DSHOCKCASE=1   -> Technology shock
+    -DSHOCKCASE=2   -> Demand shock
+    -DPHI_PI=1.5
+    -DPHI_Y=0.125
 */
 
-@#define SHOCKCASE = "BOTH"   // <-- cambia a "TECH" o "DEMAND"
+/* ===== Macros con valores por defecto (sobrescribibles desde Julia) ===== */
+@#ifndef SHOCKCASE
+  @#define SHOCKCASE = 1     // 1 = Technology, 2 = Demand
+@#endif
 
-var pi y_gap y_nat y i r_nat a z;
+@#ifndef PHI_PI
+  @#define PHI_PI = 1.5
+@#endif
+
+@#ifndef PHI_Y
+  @#define PHI_Y = 0.125
+@#endif
+
+/* ===== Variables ===== */
+var pi y_gap y_nat y yhat i r_nat a z;
 varexo eps_a eps_z;
 
-parameters beta sigma varphi alpha epsilon theta rho_a rho_z phi_pi phi_y;
+parameters betta siggma varphi alppha epsilon theta rho_a rho_z phi_pi phi_y;
 parameters Omega psi_n_ya lambda kappa;
 
-beta   = 0.99;
-sigma  = 1;
+/* ===== Calibración (Galí 2015) ===== */
+betta  = 0.99;
+siggma = 1;
 varphi = 5;
-alpha  = 0.25;
-epsilon= 9;
-theta  = 3/4;
+alppha = 1/4;
+epsilon = 9;
+theta   = 3/4;
 
-rho_a  = 0.90;
-rho_z  = 0.50;
+rho_a = 0.90;
+rho_z = 0.50;
 
-phi_pi = 1.5;
-phi_y  = 0.125;
+/* ===== Coeficientes de la regla de Taylor (desde macros) ===== */
+phi_pi = @{PHI_PI};
+phi_y  = @{PHI_Y};
 
-Omega     = (1-alpha)/(1-alpha+alpha*epsilon);
-psi_n_ya  = (1+varphi)/(sigma*(1-alpha)+varphi+alpha);
-lambda    = (1-theta)*(1-beta*theta)/theta * Omega;
-kappa     = lambda*(sigma + (varphi+alpha)/(1-alpha));
+/* ===== Parámetros compuestos ===== */
+Omega    = (1-alppha)/(1-alppha+alppha*epsilon);
+psi_n_ya = (1+varphi)/(siggma*(1-alppha)+varphi+alppha);
+lambda   = (1-theta)*(1-betta*theta)/theta * Omega;
+kappa    = lambda*(siggma + (varphi+alppha)/(1-alppha));
 
+/* ===== Modelo lineal (desviaciones respecto al estado estacionario) ===== */
 model(linear);
-  pi = beta*pi(+1) + kappa*y_gap;                         // NKPC
-  y_gap = -(1/sigma)*( i - pi(+1) - r_nat ) + y_gap(+1);  // DIS
-  r_nat = -sigma*psi_n_ya*(1-rho_a)*a + (1-rho_z)*z;
-  y_nat = psi_n_ya * a;
-  y = y_nat + y_gap;
 
-  // Regla de Taylor "forward-looking"
+  // Curva de Phillips NK
+  pi = betta*pi(+1) + kappa*y_gap;
+
+  // IS en brechas (output gap)
+  y_gap = -(1/siggma)*( i - pi(+1) - r_nat ) + y_gap(+1);
+
+  // Tasa natural de interés y producto natural
+  r_nat = -siggma*psi_n_ya*(1-rho_a)*a + (1-rho_z)*z;
+  y_nat = psi_n_ya * a;
+
+  // Output total y desviaciones
+  y    = y_nat + y_gap;
+  yhat = y - steady_state(y);    // en modelo lineal: yhat = y
+
+  // Regla de Taylor con expectativas:
+  // i_t = φ_π E_t π_{t+1} + φ_y E_t ỹ_{t+1}
   i = phi_pi*pi(+1) + phi_y*y_gap(+1);
 
+  // Procesos de choques
   a = rho_a*a(-1) + eps_a;
   z = rho_z*z(-1) + eps_z;
+
 end;
 
-steady; check;
+steady;
+check;
 
-@#if SHOCKCASE == "TECH"
+/* ===== Bloque de choques (1 = Technology, 2 = Demand) ===== */
+@#if SHOCKCASE==1
+  // Solo choque tecnológico
   shocks;
     var eps_a = 1;
     var eps_z = 0;
   end;
-@#elseif SHOCKCASE == "DEMAND"
+@#elseif SHOCKCASE==2
+  // Solo choque de demanda
   shocks;
     var eps_a = 0;
     var eps_z = 1;
   end;
 @#else
+  // Por defecto: tecnología
   shocks;
     var eps_a = 1;
-    var eps_z = 1;
+    var eps_z = 0;
   end;
 @#endif
 
-stoch_simul(order=1, irf=15, nograph);
+/* ===== Momentos teóricos (leídos desde Julia) ===== */
+stoch_simul(order=1, irf=0, nograph);
