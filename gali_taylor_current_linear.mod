@@ -1,17 +1,17 @@
 /*
   Gali (2015) – Table 4.1 (Taylor rule, CURRENT).
-  Versión “Julia-safe”: sin scripting MATLAB; tablas se hacen en Julia.
+  Versión “Julia-safe”: sin scripting MATLAB; la tabla se arma en Julia.
 
-  Macros por línea de comando (sin espacios):
+  Defines por línea de comando (sin espacios):
     -DSHOCKCASE=1   -> Technology shock
     -DSHOCKCASE=2   -> Demand shock
     -DPHI_PI=1.5
     -DPHI_Y=0.125
 */
 
-@#define SHOCKCASE 1    // 1=TECH, 2=DEMAND
-@#define PHI_PI 1.5
-@#define PHI_Y  0.125
+@#define SHOCKCASE=1     // 1=TECH, 2=DEMAND
+@#define PHI_PI=1.5
+@#define PHI_Y=0.125
 
 var pi y_gap y_nat y yhat i r_nat a z;
 varexo eps_a eps_z;
@@ -19,7 +19,7 @@ varexo eps_a eps_z;
 parameters betta siggma varphi alppha epsilon theta rho_a rho_z phi_pi phi_y;
 parameters Omega psi_n_ya lambda kappa;
 
-// --- Calibración (Gali 2015)
+// --- Calibración (Galí 2015)
 betta  = 0.99;
 siggma = 1;
 varphi = 5;
@@ -30,7 +30,7 @@ theta  = 3/4;
 rho_a  = 0.90;
 rho_z  = 0.50;
 
-// --- Coeficientes de la regla (macros)
+// --- Coeficientes de la regla (desde macros)
 phi_pi = @{PHI_PI};
 phi_y  = @{PHI_Y};
 
@@ -54,7 +54,7 @@ model(linear);
 
   // Output total, desvío y regla de Taylor (corriente)
   y    = y_nat + y_gap;
-  yhat = y - steady_state(y);   // = y en modelo lineal
+  yhat = y - steady_state(y);   // en lineal: yhat = y
   i    = phi_pi*pi + phi_y*yhat;
 
   // Choques
@@ -65,9 +65,9 @@ end;
 steady; check;
 
 // --- Bloque de choques (1=TECH, 2=DEMAND)
-@#if SHOCKCASE == 1
+@#if SHOCKCASE==1
   shocks; var eps_a = 1; var eps_z = 0; end;
-@#elseif SHOCKCASE == 2
+@#elseif SHOCKCASE==2
   shocks; var eps_a = 0; var eps_z = 1; end;
 @#else
   shocks; var eps_a = 1; var eps_z = 0; end;
