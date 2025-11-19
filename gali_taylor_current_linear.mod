@@ -1,18 +1,17 @@
 /*
   Gali (2015) – Table 4.1 (Taylor rule, CURRENT).
   Versión “Julia-safe”: sin scripting MATLAB (tablas se hacen en Julia).
-  Se pueden sobreescribir macros desde Julia con `defines`.
-
-  Ejemplo en Julia:
-    dynare("gali_taylor_current_linear.mod";
-           defines=Dict("SHOCKCASE"=>"TECH","PHI_PI"=>"1.5","PHI_Y"=>"0.125"))
+  Macros que se pueden pasar con -D:
+    SHOCKCASE = TECH o DEMAND
+    PHI_PI    = 1.5  (etc.)
+    PHI_Y     = 0.125 (etc.)
 */
 
-@#define SHOCKCASE "TECH"   // "TECH" o "DEMAND" (se puede sobreescribir desde Julia)
+@#define SHOCKCASE "TECH"
 @#define PHI_PI 1.5
 @#define PHI_Y  0.125
 
-var pi y_gap y_nat y i r_nat a z;
+var pi y_gap y_nat y yhat i r_nat a z;
 varexo eps_a eps_z;
 
 parameters betta siggma varphi alppha epsilon theta rho_a rho_z phi_pi phi_y;
@@ -41,19 +40,20 @@ kappa     = lambda*(siggma + (varphi+alppha)/(1-alppha));
 
 // --- Modelo lineal (desviaciones)
 model(linear);
-  // NKPC
+  // Phillips NK
   pi = betta*pi(+1) + kappa*y_gap;
 
   // IS (gap)
   y_gap = -(1/siggma)*( i - pi(+1) - r_nat ) + y_gap(+1);
 
-  // Natural rate y output natural
+  // Tasa natural y producto natural
   r_nat = -siggma*psi_n_ya*(1-rho_a)*a + (1-rho_z)*z;
   y_nat = psi_n_ya * a;
 
-  // Output total y regla de Taylor (corriente)
-  y = y_nat + y_gap;
-  i = phi_pi*pi + phi_y*y_gap;
+  // Output total, yhat e i_t (Taylor con valores corrientes de pi y yhat)
+  y    = y_nat + y_gap;
+  yhat = y - steady_state(y);
+  i    = phi_pi*pi + phi_y*yhat;
 
   // Procesos de choques
   a = rho_a*a(-1) + eps_a;
@@ -62,7 +62,7 @@ end;
 
 steady; check;
 
-// --- Bloque de choques
+// --- Bloque de choques (elige con -D SHOCKCASE=TECH/DEMAND)
 @#if SHOCKCASE == "TECH"
   shocks; var eps_a = 1; var eps_z = 0; end;
 @#elseif SHOCKCASE == "DEMAND"
@@ -71,5 +71,5 @@ steady; check;
   shocks; var eps_a = 1; var eps_z = 0; end;
 @#endif
 
-// Momentos teóricos (usaremos out.var en Julia para la tabla)
+// Momentos teóricos (leer out.var desde Julia)
 stoch_simul(order=1, irf=0, nograph);
