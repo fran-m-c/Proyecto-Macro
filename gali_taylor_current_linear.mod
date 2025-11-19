@@ -70,3 +70,8 @@ steady; check;
 @#elseif SHOCKCASE == 2
   shocks; var eps_a = 0; var eps_z = 1; end;
 @#else
+  shocks; var eps_a = 1; var eps_z = 0; end;
+@#endif
+
+// Momentos teóricos (leer out.var desde Julia)
+stoch_simul(order=1, irf=0, nograph);
