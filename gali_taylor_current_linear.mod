@@ -1,5 +1,5 @@
 /*
-  Galí (2015) – Tabla 4.1 (Regla de Taylor, CURRENT).
+  Gali (2015) – Table 4.1 (Taylor rule, CURRENT).
   Versión “Julia-safe”: sin scripting MATLAB; la tabla se arma en Julia.
 
   Defines por línea de comando (sin espacios):
@@ -55,7 +55,7 @@ model(linear);
   // Output total, desvío y regla de Taylor (corriente)
   y    = y_nat + y_gap;
   yhat = y - steady_state(y);   // en lineal: yhat = y
-  i    = phi_pi*pi + phi_y*y_gap;   // Taylor "current" sobre el GAP
+  i    = phi_pi*pi + phi_y*yhat;
 
   // Choques
   a = rho_a*a(-1) + eps_a;
@@ -73,5 +73,5 @@ steady; check;
   shocks; var eps_a = 1; var eps_z = 0; end;
 @#endif
 
-// Momentos teóricos (leer desde Julia)
+// Momentos teóricos (leer out.var desde Julia)
 stoch_simul(order=1, irf=0, nograph);
