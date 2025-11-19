@@ -1,13 +1,15 @@
 /*
   Gali (2015) – Table 4.1 (Taylor rule, CURRENT).
-  Versión “Julia-safe”: sin scripting MATLAB (tablas se hacen en Julia).
-  Macros que se pueden pasar con -D:
-    SHOCKCASE = TECH o DEMAND
-    PHI_PI    = 1.5  (etc.)
-    PHI_Y     = 0.125 (etc.)
+  Versión “Julia-safe”: sin scripting MATLAB; tablas se hacen en Julia.
+
+  Macros por línea de comando (sin espacios):
+    -DSHOCKCASE=1   -> Technology shock
+    -DSHOCKCASE=2   -> Demand shock
+    -DPHI_PI=1.5
+    -DPHI_Y=0.125
 */
 
-@#define SHOCKCASE "TECH"
+@#define SHOCKCASE 1    // 1=TECH, 2=DEMAND
 @#define PHI_PI 1.5
 @#define PHI_Y  0.125
 
@@ -40,36 +42,31 @@ kappa     = lambda*(siggma + (varphi+alppha)/(1-alppha));
 
 // --- Modelo lineal (desviaciones)
 model(linear);
-  // Phillips NK
+  // NK Phillips curve
   pi = betta*pi(+1) + kappa*y_gap;
 
-  // IS (gap)
+  // IS en gaps
   y_gap = -(1/siggma)*( i - pi(+1) - r_nat ) + y_gap(+1);
 
-  // Tasa natural y producto natural
+  // Natural rate y output natural
   r_nat = -siggma*psi_n_ya*(1-rho_a)*a + (1-rho_z)*z;
   y_nat = psi_n_ya * a;
 
-  // Output total, yhat e i_t (Taylor con valores corrientes de pi y yhat)
+  // Output total, desvío y regla de Taylor (corriente)
   y    = y_nat + y_gap;
-  yhat = y - steady_state(y);
+  yhat = y - steady_state(y);   // = y en modelo lineal
   i    = phi_pi*pi + phi_y*yhat;
 
-  // Procesos de choques
+  // Choques
   a = rho_a*a(-1) + eps_a;
   z = rho_z*z(-1) + eps_z;
 end;
 
 steady; check;
 
-// --- Bloque de choques (elige con -D SHOCKCASE=TECH/DEMAND)
-@#if SHOCKCASE == "TECH"
+// --- Bloque de choques (1=TECH, 2=DEMAND)
+@#if SHOCKCASE == 1
   shocks; var eps_a = 1; var eps_z = 0; end;
-@#elseif SHOCKCASE == "DEMAND"
+@#elseif SHOCKCASE == 2
   shocks; var eps_a = 0; var eps_z = 1; end;
 @#else
-  shocks; var eps_a = 1; var eps_z = 0; end;
-@#endif
-
-// Momentos teóricos (leer out.var desde Julia)
-stoch_simul(order=1, irf=0, nograph);
