@@ -1,7 +1,10 @@
 /*
-  NK lineal (Galí 2015) + Regla de Taylor "corriente"
-  i_t = phi_pi*pi_t + phi_y*y~_t
+  NK lineal (Gali 2015) + Regla de Taylor "corriente":
+    i_t = phi_pi * pi_t + phi_y * y~_t
+  Conmutador de choques: TECH / DEMAND / BOTH
 */
+
+@#define SHOCKCASE = "BOTH"   // <-- cambia a "TECH" o "DEMAND"
 
 var pi y_gap y_nat y i r_nat a z;
 varexo eps_a eps_z;
@@ -9,7 +12,7 @@ varexo eps_a eps_z;
 parameters beta sigma varphi alpha epsilon theta rho_a rho_z phi_pi phi_y;
 parameters Omega psi_n_ya lambda kappa;
 
-// ---- Calibración (Galí 2015)
+// --- Calibración (Gali 2015)
 beta   = 0.99;
 sigma  = 1;
 varphi = 5;
@@ -23,7 +26,7 @@ rho_z  = 0.50;
 phi_pi = 1.5;
 phi_y  = 0.125;
 
-// ---- Compues tos
+// --- Comp. (p.60–63)
 Omega     = (1-alpha)/(1-alpha+alpha*epsilon);
 psi_n_ya  = (1+varphi)/(sigma*(1-alpha)+varphi+alpha);
 lambda    = (1-theta)*(1-beta*theta)/theta * Omega;
@@ -53,17 +56,23 @@ end;
 
 steady; check;
 
-// ---- Escenarios de choques (elige uno comentando)
-// 1) Ambos:
-shocks;
-  var eps_a = 1;
-  var eps_z = 1;
-end;
+// --- Selección de choques para momentos/IRFs
+@#if SHOCKCASE == "TECH"
+  shocks;
+    var eps_a = 1;
+    var eps_z = 0;
+  end;
+@#elseif SHOCKCASE == "DEMAND"
+  shocks;
+    var eps_a = 0;
+    var eps_z = 1;
+  end;
+@#else
+  shocks;
+    var eps_a = 1;
+    var eps_z = 1;
+  end;
+@#endif
 
-// 2) Solo tecnología:
-//shocks; var eps_a = 1; var eps_z = 0; end;
-
-// 3) Solo demanda (preferencias):
-//shocks; var eps_a = 0; var eps_z = 1; end;
-
-stoch_simul(order=1, irf=0, nograph);
+// Teóricos + IRFs (ajusta irf si quieres)
+stoch_simul(order=1, irf=15, nograph);
