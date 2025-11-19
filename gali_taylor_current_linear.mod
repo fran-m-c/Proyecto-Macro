@@ -55,7 +55,7 @@ model(linear);
   // Output total, desvío y regla de Taylor (corriente)
   y    = y_nat + y_gap;
   yhat = y - steady_state(y);   // en lineal: yhat = y
-  i    = phi_pi*pi + phi_y*y_gap;   // REGLA "CURRENT" CON GAP
+  i    = phi_pi*pi + phi_y*y_gap;   // Taylor "current" sobre el GAP
 
   // Choques
   a = rho_a*a(-1) + eps_a;
