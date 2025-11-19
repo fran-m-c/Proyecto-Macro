@@ -101,5 +101,5 @@ check;
   end;
 @#endif
 
-/* ===== Momentos teóricos (leídos desde Julia) ===== */
+/* ===== Momentos teóricos ===== */
 stoch_simul(order=1, irf=0, nograph);
