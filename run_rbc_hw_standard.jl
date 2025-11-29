@@ -144,7 +144,7 @@ function simulate_and_compute(;
 )
 
     # run Dynare
-    context = Dynare.@dynare "/content/Proyecto-Macro/rbc_hw_standard.mod"
+    context = Dynare.@dynare "rbc_hw_standard.mod"
 
     A,B = extract_AB(context)
     ys, names = hw_steady_state()
