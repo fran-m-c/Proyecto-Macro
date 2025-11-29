@@ -102,4 +102,20 @@ end
 
 ############################################
 # 6. MAIN
-###################
+############################################
+
+function main()
+    run_dynare()
+
+    A, B, ys = load_solution()
+
+    Y = simulate(A,B,ys; T=200)
+
+    s = stats(Y)
+
+    println("TABLE 3 MOMENTS:")
+    println(s)
+
+    return s
+end
+
